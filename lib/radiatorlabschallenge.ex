@@ -49,13 +49,16 @@ defmodule Radiatorlabschallenge do
     choices(lines, counter)
   end
 
-  # choices function declaration,
+  # choices function declaration
   def choices(lines, counter) do
 
       # let the user know that the file was successfully read and parsed and then allow them to choose between sending a chunk,
       # verifying the integrity of the current firmware image thus far or quitting. Their one letter choice gets it whitespace trimmed and letter-casing downcased.
-      choice = IO.gets("Hex file has been read and parsed. \nPlease select 's' to send a chunk or 'v' to verify integrity of image or 'q' to quit\n") |> String.trim |> String.downcase
+      choice = IO.gets("Hex file has been read and parsed.\nPlease select 'a' to send all chunks at once, get the checksum and quit or 's' to send a single chunk or 'v' to verify integrity of image or 'q' to quit\n") |> String.trim |> String.downcase
       case choice do
+
+        #  Updated with new 'auto' choice to send all chunks automatically
+        "a" -> auto(lines,counter)
 
         # Send chunk then increment the counter and return to start of choices
         "s" -> sendChunk(Enum.at(lines,counter))
@@ -70,6 +73,24 @@ defmodule Radiatorlabschallenge do
          _  -> "Invalid Choice"
                choices(lines, counter)
       end
+    end
+
+    # The auto function declaration, takes the hex data and the chunk counter
+    def auto(lines, counter) do
+
+      # If statement to automatically perform a 'sendchunk' request if the counter is less
+      # than the amount of lines that the hex data has; then stops one before becauae of lists being zero-indexed.
+      if counter < Enum.count(lines) do
+
+        # Send the current counter index chunk
+        sendChunk(Enum.at(lines,counter))
+
+        # increment counter and call auto to send next line
+        auto(lines, counter + 1)
+      end
+
+      # when finished sending the hex data, output the final 'checksum' request and exit.
+      IO.puts(checksum())
     end
 
     # HTTPoison post request and interpolate a chunk of the firmware image
